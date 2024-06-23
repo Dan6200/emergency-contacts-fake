@@ -36,26 +36,24 @@ class EmergencyContact {
       "cousin",
     ];
     this.relationship =
-      relationshipTypes[Math.ceil(Math.random() * relationshipTypes.length)];
+      relationshipTypes[
+        Math.ceil(Math.random() * relationshipTypes.length - 1)
+      ];
     this.phone_number = faker.phone.number();
-    this.id = faker.string.uuid();
   }
   name: string;
   relationship: string;
   phone_number: string;
-  id: string;
 }
 
 class Resident {
   constructor() {
-    this.id = faker.string.uuid();
     this.name = faker.person.fullName();
     this.unit_number =
       faker.string.numeric({ length: { min: 2, max: 3 } }) +
       faker.string.fromCharacters("ABCDEFGHIJ", 1);
     this.address = faker.location.streetAddress();
   }
-  id: string;
   name: string;
   address: string;
   unit_number: string;
@@ -64,15 +62,22 @@ class Resident {
 
 async function addNewResident(resident: Resident) {
   try {
-    const emergencyContacts: EmergencyContact[] = Array(5).fill(
-      new EmergencyContact()
-    );
-    console.log(emergencyContacts);
+    const emergencyContacts: EmergencyContact[] = Array(
+      Math.ceil(Math.random() * 4) + 1
+    )
+      .fill(0)
+      .map((el) => new EmergencyContact());
     const emergencyContactIds = [];
     if (emergencyContacts && emergencyContacts.length)
       for (const contact of emergencyContacts) {
         const contactColRef = await collectionWrapper(db, "emergency_contacts");
-        const contactDocRef = await addDocWrapper(contactColRef, contact);
+        console.log(contact);
+        const contactDocRef = await addDocWrapper(
+          contactColRef,
+          JSON.parse(JSON.stringify(contact))
+        ).catch((e) => {
+          throw new Error("Failed to add new contacts: " + e);
+        });
         if (!contactDocRef.id)
           return {
             message: "Failed to Add Emergency Contact Info.",
@@ -82,7 +87,11 @@ async function addNewResident(resident: Resident) {
       }
     const residentColRef = await collectionWrapper(db, "residents");
     resident.emergency_contact_ids = emergencyContactIds;
-    const residentsDocRef = await addDocWrapper(residentColRef, resident);
+    console.log(resident);
+    const residentsDocRef = await addDocWrapper(
+      residentColRef,
+      JSON.parse(JSON.stringify(resident))
+    );
     return {
       result: residentsDocRef.id,
       message: "Successfully Added a New Resident",
@@ -91,7 +100,7 @@ async function addNewResident(resident: Resident) {
   } catch (error) {
     return {
       success: false,
-      message: "Failed to Add a New Resident",
+      message: `Failed to Add a New Resident: ${error}`,
     };
   }
 }
@@ -100,6 +109,6 @@ async function addNewResident(resident: Resident) {
   for (let i = 0; i < 300; i++) {
     const { success, result, message } = await addNewResident(new Resident());
     if (success) console.log(result);
-    else console.log(message);
+    else console.error(message);
   }
 })();
