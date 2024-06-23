@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { redirect, useRouter } from "next/navigation";
 import { useLayoutEffect } from "react";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import userAtom from "@/atoms/user";
 
 const AddAdminFormSchema = z.object({
@@ -49,11 +49,10 @@ export function AddAdminForm({ addAdmin }: AddAdminForm) {
       password: "",
     },
   });
-
-  const admin = useAtomValue(userAtom);
+  const [admin, setAdmin] = useAtom(userAtom);
 
   useLayoutEffect(() => {
-    if (!admin) {
+    if (admin) {
       redirect("/");
     }
   }, [admin]);
@@ -62,8 +61,10 @@ export function AddAdminForm({ addAdmin }: AddAdminForm) {
     addAdmin: Authenticate,
     data: z.infer<typeof AddAdminFormSchema>
   ) {
-    const { message, success } = await addAdmin(data);
+    const { result, message, success } = await addAdmin(data);
+    if (success) setAdmin(JSON.parse(result!));
     toast({ title: message, variant: success ? "default" : "destructive" });
+    if (success) router.push("/");
   }
 
   return (

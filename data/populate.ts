@@ -1,31 +1,18 @@
-import { createReadStream } from "fs";
-import * as fastcsv from "fast-csv";
-import {
-  addDocWrapper,
-  collectionWrapper,
-  getDocsWrapper,
-  updateDocWrapper,
-} from "@/firebase/firestore";
-import {
-  CollectionReference,
-  initializeFirestore,
-  Query,
-  query,
-  QuerySnapshot,
-  where,
-} from "firebase/firestore";
+import { addDocWrapper, collectionWrapper } from "@/firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
+import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 export const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  appId: process.env.FIREBASE_APP_ID,
+  apiKey: process.env.FB_API_KEY,
+  authDomain: process.env.FB_AUTH_DOMAIN,
+  projectId: process.env.FB_PROJECT_ID,
+  storageBucket: process.env.FB_STORAGE_BUCKET,
+  appId: process.env.FB_APP_ID,
   setConnectTimeout: 10000,
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+  measurementId: process.env.FB_MEASUREMENT_ID,
 };
 
 console.log(firebaseConfig);
@@ -35,112 +22,84 @@ const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
 
-let file1 = "data/emergency-contacts.csv",
-  file2 = "data/residents.csv";
+class EmergencyContact {
+  constructor() {
+    this.name = faker.person.firstName();
+    const relationshipTypes = [
+      "brother",
+      "sister",
+      "father",
+      "mother",
+      "uncle",
+      "aunt",
+      "friend",
+      "cousin",
+    ];
+    this.relationship =
+      relationshipTypes[Math.ceil(Math.random() * relationshipTypes.length)];
+    this.phone_number = faker.phone.number();
+    this.id = faker.string.uuid();
+  }
+  name: string;
+  relationship: string;
+  phone_number: string;
+  id: string;
+}
 
-createReadStream(file2)
-  .pipe(fastcsv.parse({ headers: true }))
-  .on("data", async (row) => {
-    try {
-      const colRef = await collectionWrapper(db, "residents").catch((e) => {
-        throw new Error("Unable to retrieve collection reference\n\t" + e);
-      });
-      const { address, unit_number, name } = row;
-      const docRef = await addDocWrapper(colRef, {
-        name,
-        address,
-        unit_number,
-      }).catch((e) => {
-        throw new Error("Unable to add data to document\n\t" + e);
-      });
-      console.log("Resident Id: ", docRef.id);
-    } catch (err) {
-      throw new Error("Unable to add residents to database.\n\t" + err);
-    }
-  })
-  .on("error", (error: Error) => console.error(`Encounter an error:\n${error}`))
-  .on("end", (rowCount: number) => console.log(`Parsed ${rowCount}  rows`));
-
-setTimeout(() => {
-  createReadStream(file1)
-    .pipe(fastcsv.parse({ headers: true }))
-    .on("data", async (row) => {
-      try {
-        const ecColRef = await collectionWrapper(db, "emergency_contacts");
-        if (!isTypeEmergencyContact(row)) {
-          console.dir(row);
-          throw new Error("row is not of type Emergency Contact");
-        }
-        const { relationship, phone_number, emergency_contact: name } = row;
-        const ecDocRef = await addDocWrapper(ecColRef, {
-          name,
-          relationship,
-          phone_number,
-        });
-        console.log("Emergency contact Id: ", ecDocRef.id);
-        const resColRef = await collectionWrapper(db, "residents").catch(
-          (err) => {
-            throw new Error(err);
-          }
-        );
-        const q = query(
-          resColRef,
-          where("name", "==", row.residents),
-          where("address", "==", row.addresses),
-          where("unit_number", "==", row.unit_number)
-        );
-        const querySnapshot = await getDocsWrapper(q);
-        Promise.all(
-          querySnapshot.docs.map(async (doc) => {
-            const docData = doc.data();
-            if (!docData)
-              throw new Error("No residents found matching query -- Tag:26");
-            if (!isTypeResidents(docData))
-              throw new Error("Object is not of type resident -- Tag:25");
-            await updateDocWrapper(doc.ref, {
-              emergency_contact_ids: [
-                ...(docData.emergency_contact_ids ?? []),
-                ecDocRef.id,
-              ],
-            });
-          })
-        );
-      } catch (err) {
-        throw new Error(
-          "Unable to add Emergency Contact Information to Resident Data.\n\t" +
-            err
-        );
-      }
-    })
-    .on("error", (error: Error) =>
-      console.error(`Encounter an error:\n${error}`)
-    )
-    .on("end", (rowCount: number) => console.log(`Parsed ${rowCount}  rows`));
-}, 6000);
-
-interface Residents {
+class Resident {
+  constructor() {
+    this.id = faker.string.uuid();
+    this.name = faker.person.fullName();
+    this.unit_number =
+      faker.string.numeric({ length: { min: 2, max: 3 } }) +
+      faker.string.fromCharacters("ABCDEFGHIJ", 1);
+    this.address = faker.location.streetAddress();
+  }
+  id: string;
   name: string;
   address: string;
   unit_number: string;
   emergency_contact_ids?: string[];
 }
 
-interface EmergencyContact {
-  residents: string;
-  addresses: string;
-  unit_number: string;
-  relationship: string;
-  emergency_contact: string;
-  phone_number: string;
+async function addNewResident(resident: Resident) {
+  try {
+    const emergencyContacts: EmergencyContact[] = Array(5).fill(
+      new EmergencyContact()
+    );
+    console.log(emergencyContacts);
+    const emergencyContactIds = [];
+    if (emergencyContacts && emergencyContacts.length)
+      for (const contact of emergencyContacts) {
+        const contactColRef = await collectionWrapper(db, "emergency_contacts");
+        const contactDocRef = await addDocWrapper(contactColRef, contact);
+        if (!contactDocRef.id)
+          return {
+            message: "Failed to Add Emergency Contact Info.",
+            success: false,
+          };
+        emergencyContactIds.push(contactDocRef.id);
+      }
+    const residentColRef = await collectionWrapper(db, "residents");
+    resident.emergency_contact_ids = emergencyContactIds;
+    const residentsDocRef = await addDocWrapper(residentColRef, resident);
+    return {
+      result: residentsDocRef.id,
+      message: "Successfully Added a New Resident",
+      success: true,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: "Failed to Add a New Resident",
+    };
+  }
 }
 
-const isTypeResidents = (data: any): data is Residents =>
-  "name" in data && "address" in data && "unit_number" in data;
-
-const isTypeEmergencyContact = (data: any): data is EmergencyContact =>
-  "emergency_contact" in data &&
-  "relationship" in data &&
-  "phone_number" in data &&
-  "residents" in data &&
-  "addresses" in data &&
-  "unit_number" in data;
+(async () => {
+  for (let i = 0; i < 300; i++) {
+    const { success, result, message } = await addNewResident(new Resident());
+    if (success) console.log(result);
+    else console.log(message);
+  }
+})();

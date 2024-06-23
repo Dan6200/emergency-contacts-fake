@@ -31,23 +31,8 @@ export default function Header({ signOut }: { signOut: () => Promise<void> }) {
 
   return (
     <header className="fixed w-full z-10 bg-background/80 flex border-b items-center justify-between px-4 py-2">
-      <Link href="/">
-        <Image
-          priority
-          width={100}
-          height={100}
-          src="/client-logo-small.png"
-          alt="LinkId logo"
-          className="block md:hidden"
-        />
-        <Image
-          priority
-          width={150}
-          height={150}
-          src="/client-logo-large.jpeg"
-          alt="LinkId logo"
-          className="hidden md:block"
-        />
+      <Link href="/" className="font-bold uppercase text-2xl">
+        LOGO
       </Link>
       {admin ? (
         <DropdownMenu>
