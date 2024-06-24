@@ -10,7 +10,8 @@ import { signOut } from "@/app/admin/sign-in/action";
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "LinkID",
+  title: "Patient Information System",
+  description: "System To Manage Patient Information",
 };
 
 export default async function RootLayout({

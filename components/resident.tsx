@@ -41,7 +41,6 @@ export default function Resident({
                 key={emConIds[index]}
                 className="h-fit"
               >
-                {/* className="md:basis-[40vw] md:grow md:shrink h-fit" */}
                 <Card className="hover:bg-green-700/10 active:bg-green-700/10 flex shadow-md p-4 w-full md:p-6 items-center md:h-[20vh] min-w-[40vw]">
                   <CardContent className="grow p-0 flex flex-col justify-between h-3/5 text-left">
                     <h3 className="capitalize font-semibold md:text-xl">
