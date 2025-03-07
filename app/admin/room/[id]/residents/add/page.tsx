@@ -4,11 +4,12 @@ import { GoBackLink } from "@/components/go-back-link";
 import { ResidentForm } from "@/components/residents/form";
 import { useSearchParams } from "next/navigation";
 
-export default function AddResidentPage({
-  params: { id },
+export default async function AddResidentPage({
+  params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const room = useSearchParams().get("room");
   return (
     <main className="flex flex-col gap-5 bg-background container w-full md:w-2/3 mx-auto py-32">

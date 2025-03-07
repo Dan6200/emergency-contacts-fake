@@ -7,10 +7,11 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default async function EditResidentPage({
-  params: { id, resId },
+  params,
 }: {
-  params: { id: string; resId: string };
+  params: Promise<{ id: string; resId: string }>;
 }) {
+  const { id, resId } = await params;
   const room = useSearchParams().get("room");
   const [residentData, setResidentData] = useState<ResidentData | null>(null);
   useEffect(() => {

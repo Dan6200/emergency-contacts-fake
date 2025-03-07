@@ -8,10 +8,11 @@ import { isTypeRoomData } from "@/types/resident";
 import util from "node:util";
 
 export default async function RoomPage({
-  params: { id },
+  params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const roomData = await getRoomData(id).catch((e) => {
     if (e.message.match(/not_found/i)) throw notFound();
     if (e.message.match(/insufficient permissions/)) redirect("/admin/sign-in");

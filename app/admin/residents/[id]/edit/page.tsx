@@ -3,10 +3,11 @@ import { ResidentForm } from "@/components/residents/form";
 import { getResidentData } from "../../data-actions";
 
 export default async function EditResidentPage({
-  params: { id },
+  params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const residentData = await getResidentData(id);
   return (
     <main className="flex flex-col gap-5 bg-background container w-full md:w-2/3 mx-auto py-32">

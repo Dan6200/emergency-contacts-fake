@@ -5,10 +5,11 @@ import util from "node:util";
 import Resident from "@/components/resident";
 
 export default async function ResidentPage({
-  params: { resId },
+  params,
 }: {
-  params: { resId: string };
+  params: Promise<{ resId: string }>;
 }) {
+  const { resId } = await params;
   const residentData = await getResidentData(resId).catch((e) => {
     if (e.message.match(/not_found/i)) throw notFound();
     if (e.message.match(/insufficient permissions/)) redirect("/admin/sign-in");
