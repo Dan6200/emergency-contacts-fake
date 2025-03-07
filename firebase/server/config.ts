@@ -19,8 +19,5 @@ if (!fbAdmin.apps.find((app) => app?.name === appName))
   );
 
 const auth = getAuth(getApp(appName));
-let db: Firestore;
-if (process.env.NODE_ENV === "production")
-  db = initializeFirestore(getApp(appName));
-else db = initializeFirestore(getApp(appName), {}, "demo");
+const db = initializeFirestore(getApp(appName), {}, "demo");
 export { db, auth };
